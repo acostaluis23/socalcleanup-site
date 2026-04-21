@@ -3,7 +3,7 @@
 Business website for **SoCal Cleanup & Hauling**, a junk removal and yard cleanup service based in Yorba Linda & Orange County, CA.
 
 ## 🌐 Live Site
-[socalcleanuphauling.netlify.app](https://socalcleanuphauling.netlify.app) ← update this once deployed
+https://luisacosta204.github.io/socalcleanup-site/
 
 ## 📋 Pages & Sections
 - **Hero** — Tagline, CTA buttons, trust indicators
