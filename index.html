@@ -1034,6 +1034,10 @@
           </div>
         </div>
         <div id="formError" style="display:none;color:#ff6b6b;font-size:0.9rem;margin-bottom:12px;padding:10px;background:rgba(255,107,107,0.1);border-radius:4px;border:1px solid rgba(255,107,107,0.3);"></div>
+        <!-- Honeypot: hidden from real users, bots fill it in -->
+        <input type="text" id="website" name="website" autocomplete="off" style="display:none;" tabindex="-1">
+        <!-- Turnstile widget -->
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAADYpJdOCXIGO8Yt9" data-theme="dark" style="margin-bottom:12px;"></div>
         <button type="submit" class="form-submit" id="submitBtn">🚛 Send Quote Request</button>
         <p class="form-note">We typically respond within a few hours. No spam, ever.</p>
       </form>
@@ -1063,14 +1067,9 @@
 <!-- STICKY MOBILE CTA -->
 <a href="tel:9515732144" class="sticky-cta">📞 Call or Text for a Free Quote</a>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
-  // ── Supabase init ─────────────────────────────────────────────
-  const SUPABASE_URL      = 'https://tcipkqjvtirudtilkknb.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjaXBrcWp2dGlydWR0aWxra25iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzY0ODAsImV4cCI6MjA5NTY1MjQ4MH0.x54OSuQbpjAcFhttSOIHWzbEczqDxUaFP-2b6TDsuNw';
-  const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ── Mobile menu ───────────────────────────────────────────────
   window.toggleMenu = function() {
@@ -1097,11 +1096,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (fileUploadArea && photoUpload) {
     fileUploadArea.addEventListener('click', function(e) {
-      if (e.target !== photoUpload) {
-        photoUpload.click();
-      }
+      if (e.target !== photoUpload) photoUpload.click();
     });
-
     photoUpload.addEventListener('change', function() {
       const count = this.files.length;
       const label = document.getElementById('fileLabel');
@@ -1111,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // ── Form submit → Supabase ────────────────────────────────────
+  // ── Form submit → /api/submit ─────────────────────────────────
   const quoteForm = document.getElementById('quoteForm');
   if (quoteForm) {
     quoteForm.addEventListener('submit', async function(e) {
@@ -1121,53 +1117,52 @@ document.addEventListener('DOMContentLoaded', function() {
       const submitBtn = document.getElementById('submitBtn');
       const errorDiv  = document.getElementById('formError');
 
-      errorDiv.style.display  = 'none';
-      errorDiv.textContent    = '';
-      submitBtn.disabled      = true;
-      submitBtn.textContent   = '⏳ Sending...';
+      errorDiv.style.display = 'none';
+      errorDiv.textContent   = '';
+      submitBtn.disabled     = true;
+      submitBtn.textContent  = '⏳ Sending...';
 
       try {
-        // 1. Upload photos
-        const files     = document.getElementById('photoUpload').files;
-        const photoUrls = [];
+        // Build multipart form data — includes all fields + photos + turnstile token
+        const formData = new FormData();
+        formData.append('first_name', document.getElementById('first_name').value.trim());
+        formData.append('last_name',  document.getElementById('last_name').value.trim());
+        formData.append('phone',      document.getElementById('phone').value.trim());
+        formData.append('email',      document.getElementById('email').value.trim());
+        formData.append('address',    document.getElementById('address').value.trim());
+        formData.append('service',    document.getElementById('service').value);
+        formData.append('message',    document.getElementById('message').value.trim());
+        formData.append('website',    document.getElementById('website').value); // honeypot
 
+        // Attach photos
+        const files = document.getElementById('photoUpload').files;
         for (const file of Array.from(files)) {
-          const ext      = file.name.split('.').pop();
-          const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-          const filePath = `leads/${fileName}`;
-
-          const { error: uploadError } = await sbClient.storage
-            .from('lead-photos')
-            .upload(filePath, file);
-
-          if (uploadError) throw new Error('Photo upload failed: ' + uploadError.message);
-          photoUrls.push(filePath);
+          formData.append('photos', file);
         }
 
-        // 2. Insert lead
-        const { error: insertError } = await sbClient.from('leads').insert({
-          first_name : document.getElementById('first_name').value.trim(),
-          last_name  : document.getElementById('last_name').value.trim(),
-          phone      : document.getElementById('phone').value.trim(),
-          email      : document.getElementById('email').value.trim(),
-          address    : document.getElementById('address').value.trim(),
-          service    : document.getElementById('service').value,
-          message    : document.getElementById('message').value.trim(),
-          photo_urls : photoUrls,
-        });
+        // Get Turnstile token
+        const turnstileEl = document.querySelector('[name="cf-turnstile-response"]');
+        if (turnstileEl) formData.append('cf-turnstile-response', turnstileEl.value);
 
-        if (insertError) throw new Error('Submission failed: ' + insertError.message);
+        const res  = await fetch('/api/submit', { method: 'POST', body: formData });
+        const data = await res.json();
 
-        // 3. Show success
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Submission failed');
+        }
+
+        // Success
         quoteForm.style.display = 'none';
         document.getElementById('formSuccess').style.display = 'block';
 
       } catch (err) {
         console.error(err);
-        errorDiv.textContent  = '⚠️ Something went wrong — please try again or call/text (951) 573-2144.';
+        errorDiv.textContent   = '⚠️ ' + (err.message || 'Something went wrong — please try again or call/text (951) 573-2144.');
         errorDiv.style.display = 'block';
-        submitBtn.disabled    = false;
-        submitBtn.textContent = '🚛 Send Quote Request';
+        submitBtn.disabled     = false;
+        submitBtn.textContent  = '🚛 Send Quote Request';
+        // Reset Turnstile so user can try again
+        if (window.turnstile) window.turnstile.reset();
       }
     });
   }
