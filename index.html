@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SoCal Cleanup & Hauling | Junk Removal · Yard Cleanup · Pet Waste</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --green-dark: #1a5c1a;
@@ -1026,7 +1025,7 @@
         </div>
         <div class="form-group">
           <label>Upload Photos (Recommended)</label>
-          <div class="file-upload" onclick="document.getElementById('photoUpload').click()">
+          <div class="file-upload" id="fileUploadArea">
             <input type="file" id="photoUpload" accept="image/*,image/heic" multiple>
             <div class="file-upload-label" id="fileLabel">
               📷 <span>Click to upload photos</span> of your items<br>
@@ -1064,19 +1063,22 @@
 <!-- STICKY MOBILE CTA -->
 <a href="tel:9515732144" class="sticky-cta">📞 Call or Text for a Free Quote</a>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ── Supabase config ──────────────────────────────────────────
-  const SUPABASE_URL = 'https://tcipkqjvtirudtilkknb.supabase.co';
+document.addEventListener('DOMContentLoaded', function() {
+
+  // ── Supabase init ─────────────────────────────────────────────
+  const SUPABASE_URL      = 'https://tcipkqjvtirudtilkknb.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjaXBrcWp2dGlydWR0aWxra25iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzY0ODAsImV4cCI6MjA5NTY1MjQ4MH0.x54OSuQbpjAcFhttSOIHWzbEczqDxUaFP-2b6TDsuNw';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ── Mobile menu ───────────────────────────────────────────────
-  function toggleMenu() {
+  window.toggleMenu = function() {
     document.getElementById('mobileMenu').classList.toggle('open');
-  }
-  function closeMenu() {
+  };
+  window.closeMenu = function() {
     document.getElementById('mobileMenu').classList.remove('open');
-  }
+  };
 
   // ── Scroll fade-in ────────────────────────────────────────────
   const observer = new IntersectionObserver((entries) => {
@@ -1089,72 +1091,88 @@
   }, { threshold: 0.1 });
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-  // ── File upload label ─────────────────────────────────────────
-  document.getElementById('photoUpload')?.addEventListener('change', function() {
-    const count = this.files.length;
-    const label = document.getElementById('fileLabel');
-    if (count > 0) {
-      label.innerHTML = `✅ <span>${count} photo${count > 1 ? 's' : ''} selected</span>`;
-    }
-  });
+  // ── File upload area click ────────────────────────────────────
+  const fileUploadArea = document.getElementById('fileUploadArea');
+  const photoUpload    = document.getElementById('photoUpload');
+
+  if (fileUploadArea && photoUpload) {
+    fileUploadArea.addEventListener('click', function(e) {
+      if (e.target !== photoUpload) {
+        photoUpload.click();
+      }
+    });
+
+    photoUpload.addEventListener('change', function() {
+      const count = this.files.length;
+      const label = document.getElementById('fileLabel');
+      if (count > 0) {
+        label.innerHTML = `✅ <span>${count} photo${count > 1 ? 's' : ''} selected</span>`;
+      }
+    });
+  }
 
   // ── Form submit → Supabase ────────────────────────────────────
-  document.getElementById('quoteForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
+  const quoteForm = document.getElementById('quoteForm');
+  if (quoteForm) {
+    quoteForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const submitBtn = document.getElementById('submitBtn');
-    const errorDiv  = document.getElementById('formError');
+      const submitBtn = document.getElementById('submitBtn');
+      const errorDiv  = document.getElementById('formError');
 
-    // Reset error state
-    errorDiv.style.display = 'none';
-    errorDiv.textContent = '';
-    submitBtn.disabled = true;
-    submitBtn.textContent = '⏳ Sending...';
+      errorDiv.style.display  = 'none';
+      errorDiv.textContent    = '';
+      submitBtn.disabled      = true;
+      submitBtn.textContent   = '⏳ Sending...';
 
-    try {
-      // 1. Upload photos to Supabase Storage
-      const photoFiles = document.getElementById('photoUpload').files;
-      const photoUrls  = [];
+      try {
+        // 1. Upload photos
+        const files     = document.getElementById('photoUpload').files;
+        const photoUrls = [];
 
-      for (const file of photoFiles) {
-        const ext      = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const filePath = `leads/${fileName}`;
+        for (const file of Array.from(files)) {
+          const ext      = file.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const filePath = `leads/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('lead-photos')
-          .upload(filePath, file);
+          const { error: uploadError } = await supabase.storage
+            .from('lead-photos')
+            .upload(filePath, file);
 
-        if (uploadError) throw new Error('Photo upload failed: ' + uploadError.message);
-        photoUrls.push(filePath);
+          if (uploadError) throw new Error('Photo upload failed: ' + uploadError.message);
+          photoUrls.push(filePath);
+        }
+
+        // 2. Insert lead
+        const { error: insertError } = await supabase.from('leads').insert({
+          first_name : document.getElementById('first_name').value.trim(),
+          last_name  : document.getElementById('last_name').value.trim(),
+          phone      : document.getElementById('phone').value.trim(),
+          email      : document.getElementById('email').value.trim(),
+          address    : document.getElementById('address').value.trim(),
+          service    : document.getElementById('service').value,
+          message    : document.getElementById('message').value.trim(),
+          photo_urls : photoUrls,
+        });
+
+        if (insertError) throw new Error('Submission failed: ' + insertError.message);
+
+        // 3. Show success
+        quoteForm.style.display = 'none';
+        document.getElementById('formSuccess').style.display = 'block';
+
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent  = '⚠️ Something went wrong — please try again or call/text (951) 573-2144.';
+        errorDiv.style.display = 'block';
+        submitBtn.disabled    = false;
+        submitBtn.textContent = '🚛 Send Quote Request';
       }
+    });
+  }
 
-      // 2. Insert lead row
-      const { error: insertError } = await supabase.from('leads').insert({
-        first_name : document.getElementById('first_name').value.trim(),
-        last_name  : document.getElementById('last_name').value.trim(),
-        phone      : document.getElementById('phone').value.trim(),
-        email      : document.getElementById('email').value.trim(),
-        address    : document.getElementById('address').value.trim(),
-        service    : document.getElementById('service').value,
-        message    : document.getElementById('message').value.trim(),
-        photo_urls : photoUrls,
-      });
-
-      if (insertError) throw new Error('Submission failed: ' + insertError.message);
-
-      // 3. Show success
-      document.getElementById('quoteForm').style.display = 'none';
-      document.getElementById('formSuccess').style.display = 'block';
-
-    } catch (err) {
-      console.error(err);
-      errorDiv.textContent = '⚠️ Something went wrong — please try again or call/text (951) 573-2144.';
-      errorDiv.style.display = 'block';
-      submitBtn.disabled = false;
-      submitBtn.textContent = '🚛 Send Quote Request';
-    }
-  });
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
