@@ -1070,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // ── Supabase init ─────────────────────────────────────────────
   const SUPABASE_URL      = 'https://tcipkqjvtirudtilkknb.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjaXBrcWp2dGlydWR0aWxra25iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzY0ODAsImV4cCI6MjA5NTY1MjQ4MH0.x54OSuQbpjAcFhttSOIHWzbEczqDxUaFP-2b6TDsuNw';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ── Mobile menu ───────────────────────────────────────────────
   window.toggleMenu = function() {
@@ -1136,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
           const filePath = `leads/${fileName}`;
 
-          const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await sbClient.storage
             .from('lead-photos')
             .upload(filePath, file);
 
@@ -1145,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 2. Insert lead
-        const { error: insertError } = await supabase.from('leads').insert({
+        const { error: insertError } = await sbClient.from('leads').insert({
           first_name : document.getElementById('first_name').value.trim(),
           last_name  : document.getElementById('last_name').value.trim(),
           phone      : document.getElementById('phone').value.trim(),
