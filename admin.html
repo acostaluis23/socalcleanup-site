@@ -9,347 +9,198 @@
 <style>
   :root {
     --green-dark: #1a5c1a;
-    --green-mid: #2a8c2a;
-    --gold: #f5a623;
+    --green-mid:  #2a8c2a;
+    --gold:       #f5a623;
     --gold-light: #ffd166;
-    --black: #0d0d0d;
-    --surface: #161616;
-    --surface2: #1e1e1e;
-    --border: rgba(255,255,255,0.08);
-    --off-white: #f4f4f0;
-    --muted: rgba(244,244,240,0.5);
+    --black:      #0d0d0d;
+    --surface:    #161616;
+    --surface2:   #1e1e1e;
+    --border:     rgba(255,255,255,0.08);
+    --off-white:  #f4f4f0;
+    --muted:      rgba(244,244,240,0.5);
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Nunito', sans-serif;
-    background: var(--black);
-    color: var(--off-white);
-    min-height: 100vh;
-  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Nunito',sans-serif; background:var(--black); color:var(--off-white); min-height:100vh; }
+
+  /* ── STATUS COLORS ── */
+  .s-new       { background:rgba(59,130,246,0.2);  border-color:rgba(59,130,246,0.5);  color:#93c5fd; }
+  .s-contacted { background:rgba(245,166,35,0.2);  border-color:rgba(245,166,35,0.5);  color:#fcd34d; }
+  .s-quoted    { background:rgba(168,85,247,0.2);  border-color:rgba(168,85,247,0.5);  color:#d8b4fe; }
+  .s-booked    { background:rgba(16,185,129,0.2);  border-color:rgba(16,185,129,0.5);  color:#6ee7b7; }
+  .s-completed { background:rgba(42,140,42,0.2);   border-color:rgba(42,140,42,0.5);   color:#86efac; }
+  .s-declined  { background:rgba(239,68,68,0.2);   border-color:rgba(239,68,68,0.5);   color:#fca5a5; }
+
+  /* ── SERVICE COLORS ── */
+  .svc-junk     { background:rgba(249,115,22,0.15); border-color:rgba(249,115,22,0.4); color:#fdba74; }
+  .svc-garage   { background:rgba(168,85,247,0.15); border-color:rgba(168,85,247,0.4); color:#d8b4fe; }
+  .svc-yard     { background:rgba(34,197,94,0.15);  border-color:rgba(34,197,94,0.4);  color:#86efac; }
+  .svc-furniture{ background:rgba(59,130,246,0.15); border-color:rgba(59,130,246,0.4); color:#93c5fd; }
+  .svc-pet      { background:rgba(236,72,153,0.15); border-color:rgba(236,72,153,0.4); color:#f9a8d4; }
+  .svc-moving   { background:rgba(245,166,35,0.15); border-color:rgba(245,166,35,0.4); color:#fcd34d; }
+  .svc-other    { background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.4);color:#cbd5e1; }
 
   /* ── LOGIN ── */
   #loginScreen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    background: radial-gradient(ellipse at top, rgba(26,92,26,0.3) 0%, transparent 60%);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+    background:radial-gradient(ellipse at top,rgba(26,92,26,0.3) 0%,transparent 60%);
   }
   .login-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 48px 40px;
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:48px 40px; width:100%; max-width:400px; text-align:center;
   }
-  .login-logo {
-    font-family: 'Oswald', sans-serif;
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-  .login-logo span { color: var(--gold); }
-  .login-sub {
-    color: var(--muted);
-    font-size: 0.85rem;
-    margin-bottom: 32px;
-  }
+  .login-logo { font-family:'Oswald',sans-serif; font-size:1.4rem; font-weight:700; margin-bottom:6px; }
+  .login-logo span { color:var(--gold); }
+  .login-sub { color:var(--muted); font-size:0.85rem; margin-bottom:32px; }
   .login-card input {
-    width: 100%;
-    padding: 12px 16px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--off-white);
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.95rem;
-    margin-bottom: 12px;
-    outline: none;
-    transition: border-color 0.2s;
+    width:100%; padding:12px 16px; background:var(--surface2); border:1px solid var(--border);
+    border-radius:6px; color:var(--off-white); font-family:'Nunito',sans-serif; font-size:0.95rem;
+    margin-bottom:12px; outline:none; transition:border-color 0.2s;
   }
-  .login-card input:focus { border-color: var(--gold); }
+  .login-card input:focus { border-color:var(--gold); }
   .login-btn {
-    width: 100%;
-    padding: 13px;
-    background: var(--gold);
-    color: var(--black);
-    border: none;
-    border-radius: 6px;
-    font-family: 'Oswald', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-top: 4px;
+    width:100%; padding:13px; background:var(--gold); color:var(--black); border:none;
+    border-radius:6px; font-family:'Oswald',sans-serif; font-size:1rem; font-weight:700;
+    letter-spacing:1px; cursor:pointer; transition:background 0.2s; margin-top:4px;
   }
-  .login-btn:hover { background: var(--gold-light); }
-  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-  .login-error {
-    color: #ff6b6b;
-    font-size: 0.85rem;
-    margin-top: 12px;
-    display: none;
-  }
+  .login-btn:hover { background:var(--gold-light); }
+  .login-btn:disabled { opacity:0.6; cursor:not-allowed; }
+  .login-error { color:#ff6b6b; font-size:0.85rem; margin-top:12px; display:none; }
 
   /* ── DASHBOARD ── */
-  #dashboard { display: none; }
-
+  #dashboard { display:none; }
   header {
-    background: var(--surface);
-    border-bottom: 2px solid var(--green-mid);
-    padding: 14px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    background:var(--surface); border-bottom:2px solid var(--green-mid); padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10;
   }
-  .header-logo {
-    font-family: 'Oswald', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-  .header-logo span { color: var(--gold); }
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  .header-user {
-    font-size: 0.82rem;
-    color: var(--muted);
-  }
+  .header-logo { font-family:'Oswald',sans-serif; font-size:1.1rem; font-weight:700; }
+  .header-logo span { color:var(--gold); }
+  .header-right { display:flex; align-items:center; gap:16px; }
+  .header-user { font-size:0.82rem; color:var(--muted); }
   .logout-btn {
-    padding: 7px 16px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    color: var(--off-white);
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: border-color 0.2s;
+    padding:7px 16px; background:transparent; border:1px solid var(--border); border-radius:5px;
+    color:var(--off-white); font-family:'Nunito',sans-serif; font-size:0.82rem; cursor:pointer; transition:border-color 0.2s;
   }
-  .logout-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .logout-btn:hover { border-color:var(--gold); color:var(--gold); }
 
-  .dash-content { padding: 28px 24px; max-width: 1200px; margin: 0 auto; }
+  .dash-content { padding:28px 24px; max-width:1300px; margin:0 auto; }
 
-  /* Stats bar */
-  .stats-bar {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px;
-    text-align: center;
-  }
-  .stat-num {
-    font-family: 'Oswald', sans-serif;
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--gold);
-  }
-  .stat-label {
-    font-size: 0.78rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 4px;
-  }
+  /* Stats */
+  .stats-bar { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:16px; margin-bottom:28px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px; text-align:center; }
+  .stat-num { font-family:'Oswald',sans-serif; font-size:2rem; font-weight:700; color:var(--gold); }
+  .stat-label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
 
   /* Controls */
-  .controls {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
+  .controls { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
   .controls input, .controls select {
-    padding: 9px 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--off-white);
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.88rem;
-    outline: none;
-    transition: border-color 0.2s;
+    padding:9px 14px; background:var(--surface); border:1px solid var(--border); border-radius:6px;
+    color:var(--off-white); font-family:'Nunito',sans-serif; font-size:0.88rem; outline:none; transition:border-color 0.2s;
   }
-  .controls input { flex: 1; min-width: 200px; }
-  .controls input:focus, .controls select:focus { border-color: var(--gold); }
-  .controls select option { background: #1e1e1e; }
+  .controls input { flex:1; min-width:200px; }
+  .controls input:focus, .controls select:focus { border-color:var(--gold); }
+  .controls select option { background:#1e1e1e; }
   .refresh-btn {
-    padding: 9px 18px;
-    background: var(--green-dark);
-    border: 1px solid var(--green-mid);
-    border-radius: 6px;
-    color: var(--off-white);
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.88rem;
-    cursor: pointer;
-    transition: background 0.2s;
-    white-space: nowrap;
+    padding:9px 18px; background:var(--green-dark); border:1px solid var(--green-mid); border-radius:6px;
+    color:var(--off-white); font-family:'Nunito',sans-serif; font-size:0.88rem; cursor:pointer; transition:background 0.2s; white-space:nowrap;
   }
-  .refresh-btn:hover { background: var(--green-mid); }
+  .refresh-btn:hover { background:var(--green-mid); }
 
-  /* Leads table */
-  .table-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .leads-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.88rem;
-  }
+  /* Table */
+  .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .leads-table { width:100%; border-collapse:collapse; font-size:0.87rem; }
   .leads-table th {
-    background: var(--surface2);
-    padding: 13px 16px;
-    text-align: left;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
+    background:var(--surface2); padding:12px 14px; text-align:left; font-size:0.7rem;
+    text-transform:uppercase; letter-spacing:1px; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap;
   }
-  .leads-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
-  .leads-table tr:last-child td { border-bottom: none; }
-  .leads-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .leads-table td { padding:14px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .leads-table tr:last-child td { border-bottom:none; }
+  .leads-table tr:hover td { background:rgba(255,255,255,0.02); }
 
-  .lead-name { font-weight: 700; color: var(--off-white); }
-  .lead-phone a { color: var(--gold); text-decoration: none; }
-  .lead-phone a:hover { text-decoration: underline; }
-  .lead-address { color: var(--muted); font-size: 0.82rem; max-width: 180px; }
-  .service-badge {
-    display: inline-block;
-    padding: 3px 10px;
-    background: rgba(42,140,42,0.2);
-    border: 1px solid rgba(42,140,42,0.4);
-    border-radius: 20px;
-    font-size: 0.75rem;
-    color: #6ee06e;
-    white-space: nowrap;
-  }
-  .lead-message {
-    color: var(--muted);
-    font-size: 0.82rem;
-    max-width: 200px;
-    line-height: 1.4;
-  }
-  .lead-date { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+  .lead-name { font-weight:700; color:var(--off-white); }
+  .lead-email { font-size:0.76rem; color:var(--muted); margin-top:2px; }
+  .lead-phone a { color:var(--gold); text-decoration:none; }
+  .lead-phone a:hover { text-decoration:underline; }
+  .lead-address { color:var(--muted); font-size:0.81rem; max-width:160px; line-height:1.4; }
+  .lead-message { color:var(--muted); font-size:0.81rem; max-width:180px; line-height:1.4; }
+  .lead-date { color:var(--muted); font-size:0.79rem; white-space:nowrap; }
 
-  .photos-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+  /* Badges */
+  .badge {
+    display:inline-block; padding:3px 10px; border:1px solid; border-radius:20px;
+    font-size:0.72rem; font-weight:700; white-space:nowrap; letter-spacing:0.3px;
+  }
+
+  /* Status dropdown */
+  .status-select {
+    appearance:none; -webkit-appearance:none;
+    padding:4px 24px 4px 10px; border:1px solid; border-radius:20px;
+    font-size:0.72rem; font-weight:700; letter-spacing:0.3px;
+    cursor:pointer; font-family:'Nunito',sans-serif;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.4)'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 8px center;
+    transition:opacity 0.15s;
+  }
+  .status-select:focus { outline:none; }
+  .status-select option { background:#1e1e1e; color:white; font-size:0.85rem; }
+
+  /* Notes */
+  .notes-cell { min-width:160px; max-width:220px; }
+  .notes-textarea {
+    width:100%; min-height:56px; padding:7px 10px;
+    background:rgba(255,255,255,0.04); border:1px solid var(--border);
+    border-radius:5px; color:var(--off-white); font-family:'Nunito',sans-serif;
+    font-size:0.8rem; resize:vertical; outline:none; transition:border-color 0.2s;
+    line-height:1.4;
+  }
+  .notes-textarea:focus { border-color:var(--gold); }
+  .notes-textarea::placeholder { color:rgba(244,244,240,0.25); }
+  .notes-saving { font-size:0.7rem; color:var(--muted); margin-top:3px; height:14px; }
+
+  /* Photos */
+  .photos-cell { display:flex; gap:5px; flex-wrap:wrap; max-width:130px; }
   .photo-thumb {
-    width: 52px; height: 52px;
-    object-fit: cover;
-    border-radius: 5px;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    transition: transform 0.15s;
+    width:48px; height:48px; object-fit:cover; border-radius:4px;
+    border:1px solid var(--border); cursor:pointer; transition:transform 0.15s;
   }
-  .photo-thumb:hover { transform: scale(1.08); }
+  .photo-thumb:hover { transform:scale(1.1); }
 
+  /* Delete */
   .delete-btn {
-    padding: 5px 12px;
-    background: transparent;
-    border: 1px solid rgba(255,107,107,0.3);
-    border-radius: 5px;
-    color: #ff6b6b;
-    font-size: 0.78rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
+    padding:5px 11px; background:transparent; border:1px solid rgba(255,107,107,0.3);
+    border-radius:5px; color:#ff6b6b; font-size:0.76rem; cursor:pointer; transition:all 0.15s; white-space:nowrap;
   }
-  .delete-btn:hover { background: rgba(255,107,107,0.1); border-color: #ff6b6b; }
+  .delete-btn:hover { background:rgba(255,107,107,0.1); border-color:#ff6b6b; }
 
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-  }
-  .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+  .empty-state .emoji { font-size:3rem; margin-bottom:12px; }
+  .loading-state { text-align:center; padding:60px 20px; color:var(--muted); }
 
-  .loading-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-  }
-
-  /* Photo lightbox */
+  /* Lightbox */
   #lightbox {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.92);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92);
+    z-index:1000; align-items:center; justify-content:center; cursor:pointer;
   }
-  #lightbox.open { display: flex; }
-  #lightbox img {
-    max-width: 90vw;
-    max-height: 90vh;
-    object-fit: contain;
-    border-radius: 6px;
-  }
-  #lightbox .close-x {
-    position: absolute;
-    top: 20px; right: 28px;
-    font-size: 2rem;
-    color: white;
-    cursor: pointer;
-    line-height: 1;
-  }
+  #lightbox.open { display:flex; }
+  #lightbox img { max-width:90vw; max-height:90vh; object-fit:contain; border-radius:6px; }
+  #lightbox .close-x { position:absolute; top:20px; right:28px; font-size:2rem; color:white; cursor:pointer; }
 
-  /* Mobile cards fallback */
-  @media (max-width: 700px) {
-    .leads-table thead { display: none; }
-    .leads-table, .leads-table tbody, .leads-table tr, .leads-table td {
-      display: block; width: 100%;
-    }
-    .leads-table tr {
-      border-bottom: 1px solid var(--border);
-      padding: 16px;
-    }
-    .leads-table tr:hover td { background: transparent; }
-    .leads-table td {
-      border: none; padding: 3px 0;
-    }
-    .leads-table td::before {
-      content: attr(data-label) ': ';
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      font-weight: 700;
-    }
-    .lead-address, .lead-message { max-width: 100%; }
-    .dash-content { padding: 16px; }
-    .controls input { min-width: 100%; }
+  /* Mobile */
+  @media (max-width:700px) {
+    .leads-table thead { display:none; }
+    .leads-table, .leads-table tbody, .leads-table tr, .leads-table td { display:block; width:100%; }
+    .leads-table tr { border-bottom:1px solid var(--border); padding:16px; }
+    .leads-table tr:hover td { background:transparent; }
+    .leads-table td { border:none; padding:4px 0; }
+    .leads-table td::before { content:attr(data-label) ': '; font-size:0.7rem; text-transform:uppercase; color:var(--muted); font-weight:700; }
+    .lead-address, .lead-message, .notes-cell { max-width:100%; }
+    .dash-content { padding:16px; }
+    .controls input { min-width:100%; }
   }
 </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-logo">SoCal <span>Cleanup & Hauling</span></div>
@@ -380,12 +231,20 @@
         <div class="stat-label">Total Leads</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num" id="statToday">—</div>
-        <div class="stat-label">Today</div>
+        <div class="stat-num" id="statNew">—</div>
+        <div class="stat-label">New</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num" id="statWeek">—</div>
-        <div class="stat-label">This Week</div>
+        <div class="stat-num" id="statBooked">—</div>
+        <div class="stat-label">Booked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statCompleted">—</div>
+        <div class="stat-label">Completed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="statToday">—</div>
+        <div class="stat-label">Today</div>
       </div>
       <div class="stat-card">
         <div class="stat-num" id="statPhotos">—</div>
@@ -396,6 +255,15 @@
     <!-- Controls -->
     <div class="controls">
       <input type="text" id="searchInput" placeholder="🔍  Search by name, phone, address..." oninput="renderLeads()">
+      <select id="statusFilter" onchange="renderLeads()">
+        <option value="">All Statuses</option>
+        <option value="new">🔵 New</option>
+        <option value="contacted">🟡 Contacted</option>
+        <option value="quoted">🟣 Quoted</option>
+        <option value="booked">🟢 Booked</option>
+        <option value="completed">✅ Completed</option>
+        <option value="declined">🔴 Declined</option>
+      </select>
       <select id="serviceFilter" onchange="renderLeads()">
         <option value="">All Services</option>
         <option>Junk / Item Removal</option>
@@ -411,21 +279,23 @@
 
     <!-- Table -->
     <div class="table-wrap">
-      <table class="leads-table" id="leadsTable">
+      <table class="leads-table">
         <thead>
           <tr>
             <th>Name</th>
             <th>Phone</th>
             <th>Address</th>
             <th>Service</th>
+            <th>Status</th>
             <th>Message</th>
+            <th>Notes</th>
             <th>Photos</th>
             <th>Date</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="leadsBody">
-          <tr><td colspan="8"><div class="loading-state">Loading leads...</div></td></tr>
+          <tr><td colspan="10"><div class="loading-state">Loading leads...</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -446,13 +316,31 @@
 
   let allLeads = [];
 
-  // ── Auth ─────────────────────────────────────────────────────
+  // ── Status config ─────────────────────────────────────────────
+  const STATUS = {
+    new       : { label:'New',       cls:'s-new'       },
+    contacted : { label:'Contacted', cls:'s-contacted'  },
+    quoted    : { label:'Quoted',    cls:'s-quoted'     },
+    booked    : { label:'Booked',    cls:'s-booked'     },
+    completed : { label:'Completed', cls:'s-completed'  },
+    declined  : { label:'Declined',  cls:'s-declined'   },
+  };
+
+  // ── Service color config ──────────────────────────────────────
+  const SVC_CLASS = {
+    'Junk / Item Removal' : 'svc-junk',
+    'Garage Cleanout'     : 'svc-garage',
+    'Yard & Debris Cleanup':'svc-yard',
+    'Furniture Hauling'   : 'svc-furniture',
+    'Pet Waste Removal'   : 'svc-pet',
+    'Moving Cleanup'      : 'svc-moving',
+    'Other / Not Sure'    : 'svc-other',
+  };
+
+  // ── Auth ──────────────────────────────────────────────────────
   db.auth.onAuthStateChange((event, session) => {
-    if (session) {
-      showDashboard(session.user);
-    } else {
-      showLogin();
-    }
+    if (session) showDashboard(session.user);
+    else         showLogin();
   });
 
   async function handleLogin() {
@@ -460,37 +348,26 @@
     const error = document.getElementById('loginError');
     const email = document.getElementById('loginEmail').value.trim();
     const pass  = document.getElementById('loginPassword').value;
-
     error.style.display = 'none';
-    btn.disabled = true;
-    btn.textContent = 'Signing in...';
-
+    btn.disabled = true; btn.textContent = 'Signing in...';
     const { error: authError } = await db.auth.signInWithPassword({ email, password: pass });
-
     if (authError) {
-      error.textContent = 'Invalid email or password. Try again.';
+      error.textContent = 'Invalid email or password.';
       error.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Sign In';
+      btn.disabled = false; btn.textContent = 'Sign In';
     }
   }
 
-  // Allow Enter key to submit login
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
-      handleLogin();
-    }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') handleLogin();
   });
 
-  async function handleLogout() {
-    await db.auth.signOut();
-  }
+  async function handleLogout() { await db.auth.signOut(); }
 
   function showLogin() {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('dashboard').style.display   = 'none';
   }
-
   function showDashboard(user) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('dashboard').style.display   = 'block';
@@ -498,104 +375,169 @@
     loadLeads();
   }
 
-  // ── Leads ─────────────────────────────────────────────────────
+  // ── Load leads ────────────────────────────────────────────────
   async function loadLeads() {
     document.getElementById('leadsBody').innerHTML =
-      '<tr><td colspan="8"><div class="loading-state">Loading leads...</div></td></tr>';
-
-    const { data, error } = await db
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false });
-
+      '<tr><td colspan="10"><div class="loading-state">Loading leads...</div></td></tr>';
+    const { data, error } = await db.from('leads').select('*').order('created_at', { ascending: false });
     if (error) {
       document.getElementById('leadsBody').innerHTML =
-        '<tr><td colspan="8"><div class="empty-state"><div class="emoji">⚠️</div><p>Error loading leads. Try refreshing.</p></div></td></tr>';
+        '<tr><td colspan="10"><div class="empty-state"><div class="emoji">⚠️</div><p>Error loading leads.</p></div></td></tr>';
       return;
     }
-
     allLeads = data || [];
     updateStats();
     renderLeads();
   }
 
+  // ── Stats ─────────────────────────────────────────────────────
   function updateStats() {
-    const now   = new Date();
-    const today = now.toISOString().slice(0, 10);
-    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    document.getElementById('statTotal').textContent  = allLeads.length;
-    document.getElementById('statToday').textContent  = allLeads.filter(l => l.created_at.startsWith(today)).length;
-    document.getElementById('statWeek').textContent   = allLeads.filter(l => l.created_at >= weekAgo).length;
-    document.getElementById('statPhotos').textContent = allLeads.filter(l => l.photo_urls && l.photo_urls.length > 0).length;
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('statTotal').textContent     = allLeads.length;
+    document.getElementById('statNew').textContent       = allLeads.filter(l => (l.status || 'new') === 'new').length;
+    document.getElementById('statBooked').textContent    = allLeads.filter(l => l.status === 'booked').length;
+    document.getElementById('statCompleted').textContent = allLeads.filter(l => l.status === 'completed').length;
+    document.getElementById('statToday').textContent     = allLeads.filter(l => l.created_at.startsWith(today)).length;
+    document.getElementById('statPhotos').textContent    = allLeads.filter(l => l.photo_urls?.length > 0).length;
   }
 
+  // ── Render ────────────────────────────────────────────────────
   function renderLeads() {
     const search  = document.getElementById('searchInput').value.toLowerCase();
+    const status  = document.getElementById('statusFilter').value;
     const service = document.getElementById('serviceFilter').value;
 
     const filtered = allLeads.filter(lead => {
       const matchSearch = !search ||
         (lead.first_name + ' ' + lead.last_name).toLowerCase().includes(search) ||
-        (lead.phone || '').toLowerCase().includes(search) ||
-        (lead.address || '').toLowerCase().includes(search) ||
-        (lead.email || '').toLowerCase().includes(search);
+        (lead.phone  || '').includes(search) ||
+        (lead.address|| '').toLowerCase().includes(search) ||
+        (lead.email  || '').toLowerCase().includes(search);
+      const matchStatus  = !status  || (lead.status || 'new') === status;
       const matchService = !service || lead.service === service;
-      return matchSearch && matchService;
+      return matchSearch && matchStatus && matchService;
     });
 
     const tbody = document.getElementById('leadsBody');
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+      tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">
         <div class="emoji">📭</div>
-        <p>${allLeads.length === 0 ? 'No leads yet. Submissions will appear here.' : 'No leads match your search.'}</p>
+        <p>${allLeads.length === 0 ? 'No leads yet.' : 'No leads match your filters.'}</p>
       </div></td></tr>`;
       return;
     }
 
     tbody.innerHTML = filtered.map(lead => {
       const name    = [lead.first_name, lead.last_name].filter(Boolean).join(' ');
-      const date    = new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      const photos  = (lead.photo_urls || []).map(path => {
-        const { data } = db.storage.from('lead-photos').getPublicUrl(path);
-        // We use a signed URL approach via click instead
-        return `<img class="photo-thumb" src="" data-path="${path}" alt="Lead photo" onclick="openPhoto('${path}')" title="Click to view">`;
-      }).join('');
+      const date    = new Date(lead.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+      const status  = lead.status || 'new';
+      const sCfg    = STATUS[status] || STATUS.new;
+      const svcCls  = SVC_CLASS[lead.service] || 'svc-other';
 
-      return `<tr>
-        <td data-label="Name"><div class="lead-name">${escHtml(name)}</div>${lead.email ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${escHtml(lead.email)}</div>` : ''}</td>
-        <td data-label="Phone"><div class="lead-phone"><a href="tel:${escHtml(lead.phone)}">${escHtml(lead.phone)}</a></div></td>
-        <td data-label="Address"><div class="lead-address">${escHtml(lead.address || '—')}</div></td>
-        <td data-label="Service">${lead.service ? `<span class="service-badge">${escHtml(lead.service)}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
-        <td data-label="Message"><div class="lead-message">${escHtml(lead.message || '—')}</div></td>
-        <td data-label="Photos"><div class="photos-cell">${photos || '<span style="color:var(--muted);font-size:0.8rem;">None</span>'}</div></td>
+      const photos  = (lead.photo_urls || []).map(path =>
+        `<img class="photo-thumb" src="" data-path="${escHtml(path)}" alt="photo" onclick="openPhoto('${escHtml(path)}')" title="Click to view">`
+      ).join('');
+
+      const statusOpts = Object.entries(STATUS).map(([val, cfg]) =>
+        `<option value="${val}" ${val === status ? 'selected' : ''}>${cfg.label}</option>`
+      ).join('');
+
+      return `<tr id="row-${lead.id}">
+        <td data-label="Name">
+          <div class="lead-name">${escHtml(name)}</div>
+          ${lead.email ? `<div class="lead-email">${escHtml(lead.email)}</div>` : ''}
+        </td>
+        <td data-label="Phone">
+          <div class="lead-phone"><a href="tel:${escHtml(lead.phone)}">${escHtml(lead.phone)}</a></div>
+        </td>
+        <td data-label="Address">
+          <div class="lead-address">${escHtml(lead.address || '—')}</div>
+        </td>
+        <td data-label="Service">
+          ${lead.service
+            ? `<span class="badge ${svcCls}">${escHtml(lead.service)}</span>`
+            : '<span style="color:var(--muted)">—</span>'}
+        </td>
+        <td data-label="Status">
+          <select class="status-select badge ${sCfg.cls}" onchange="updateStatus('${lead.id}', this)">
+            ${statusOpts}
+          </select>
+        </td>
+        <td data-label="Message">
+          <div class="lead-message">${escHtml(lead.message || '—')}</div>
+        </td>
+        <td data-label="Notes" class="notes-cell">
+          <textarea class="notes-textarea" placeholder="Add notes..."
+            onblur="saveNote('${lead.id}', this)"
+            onkeydown="if(event.ctrlKey&&event.key==='Enter'){this.blur();}"
+          >${escHtml(lead.notes || '')}</textarea>
+          <div class="notes-saving" id="note-status-${lead.id}"></div>
+        </td>
+        <td data-label="Photos">
+          <div class="photos-cell">${photos || '<span style="color:var(--muted);font-size:0.78rem;">None</span>'}</div>
+        </td>
         <td data-label="Date"><div class="lead-date">${date}</div></td>
-        <td><button class="delete-btn" onclick="deleteLead('${lead.id}', '${escHtml(name)}')">Delete</button></td>
+        <td><button class="delete-btn" onclick="deleteLead('${lead.id}','${escHtml(name)}')">Delete</button></td>
       </tr>`;
     }).join('');
 
-    // Load signed URLs for photos
     loadPhotoThumbs();
   }
 
+  // ── Update status ─────────────────────────────────────────────
+  async function updateStatus(id, selectEl) {
+    const newStatus = selectEl.value;
+    const cfg       = STATUS[newStatus] || STATUS.new;
+
+    // Update visual immediately
+    selectEl.className = `status-select badge ${cfg.cls}`;
+
+    // Save to DB
+    const { error } = await db.from('leads').update({ status: newStatus }).eq('id', id);
+    if (error) {
+      alert('Failed to update status. Please try again.');
+      return;
+    }
+
+    // Update local data
+    const lead = allLeads.find(l => l.id === id);
+    if (lead) lead.status = newStatus;
+    updateStats();
+  }
+
+  // ── Save note ─────────────────────────────────────────────────
+  async function saveNote(id, textarea) {
+    const noteStatus = document.getElementById('note-status-' + id);
+    const notes      = textarea.value;
+
+    // Skip if unchanged
+    const lead = allLeads.find(l => l.id === id);
+    if (lead && lead.notes === notes) return;
+
+    noteStatus.textContent = 'Saving...';
+    const { error } = await db.from('leads').update({ notes }).eq('id', id);
+    if (error) {
+      noteStatus.textContent = '⚠️ Save failed';
+    } else {
+      noteStatus.textContent = '✓ Saved';
+      if (lead) lead.notes = notes;
+      setTimeout(() => { noteStatus.textContent = ''; }, 2000);
+    }
+  }
+
+  // ── Photos ────────────────────────────────────────────────────
   async function loadPhotoThumbs() {
     const imgs = document.querySelectorAll('.photo-thumb[data-path]');
     for (const img of imgs) {
       const path = img.getAttribute('data-path');
-      const { data, error } = await db.storage
-        .from('lead-photos')
-        .createSignedUrl(path, 3600); // 1 hour
-      if (!error && data?.signedUrl) {
-        img.src = data.signedUrl;
-      }
+      const { data, error } = await db.storage.from('lead-photos').createSignedUrl(path, 3600);
+      if (!error && data?.signedUrl) img.src = data.signedUrl;
     }
   }
 
   async function openPhoto(path) {
-    const { data, error } = await db.storage
-      .from('lead-photos')
-      .createSignedUrl(path, 3600);
+    const { data, error } = await db.storage.from('lead-photos').createSignedUrl(path, 3600);
     if (!error && data?.signedUrl) {
       document.getElementById('lightboxImg').src = data.signedUrl;
       document.getElementById('lightbox').classList.add('open');
@@ -607,9 +549,9 @@
     document.getElementById('lightboxImg').src = '';
   }
 
+  // ── Delete ────────────────────────────────────────────────────
   async function deleteLead(id, name) {
     if (!confirm(`Delete lead for "${name}"? This cannot be undone.`)) return;
-
     const { error } = await db.from('leads').delete().eq('id', id);
     if (!error) {
       allLeads = allLeads.filter(l => l.id !== id);
