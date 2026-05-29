@@ -1029,7 +1029,7 @@
             <input type="file" id="photoUpload" accept="image/*,image/heic" multiple>
             <div class="file-upload-label" id="fileLabel">
               📷 <span>Click to upload photos</span> of your items<br>
-              <small style="color:rgba(244,244,240,0.3);">JPG, PNG, HEIC accepted · Multiple files OK</small>
+              <small style="color:rgba(244,244,240,0.3);">JPG, PNG, HEIC accepted · Up to 6 photos · Max 10MB each</small>
             </div>
           </div>
         </div>
@@ -1067,9 +1067,20 @@
 <!-- STICKY MOBILE CTA -->
 <a href="tel:9515732144" class="sticky-cta">📞 Call or Text for a Free Quote</a>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
+  // ── Config ────────────────────────────────────────────────────
+  const SUPABASE_URL      = 'https://tcipkqjvtirudtilkknb.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjaXBrcWp2dGlydWR0aWxra25iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzY0ODAsImV4cCI6MjA5NTY1MjQ4MH0.x54OSuQbpjAcFhttSOIHWzbEczqDxUaFP-2b6TDsuNw';
+  const sbClient          = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const MAX_PHOTOS   = 6;
+  const MAX_MB       = 10;
+  const MAX_BYTES    = MAX_MB * 1024 * 1024;
+  const ALLOWED_TYPES = ['image/jpeg','image/jpg','image/png','image/webp','image/heic','image/heif'];
 
   // ── Mobile menu ───────────────────────────────────────────────
   window.toggleMenu = function() {
@@ -1090,24 +1101,59 @@ document.addEventListener('DOMContentLoaded', function() {
   }, { threshold: 0.1 });
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-  // ── File upload area click ────────────────────────────────────
+  // ── File upload handler ───────────────────────────────────────
   const fileUploadArea = document.getElementById('fileUploadArea');
   const photoUpload    = document.getElementById('photoUpload');
+  const fileLabel      = document.getElementById('fileLabel');
+  const errorDiv       = document.getElementById('formError');
 
   if (fileUploadArea && photoUpload) {
     fileUploadArea.addEventListener('click', function(e) {
       if (e.target !== photoUpload) photoUpload.click();
     });
+
     photoUpload.addEventListener('change', function() {
-      const count = this.files.length;
-      const label = document.getElementById('fileLabel');
-      if (count > 0) {
-        label.innerHTML = `✅ <span>${count} photo${count > 1 ? 's' : ''} selected</span>`;
+      const files = Array.from(this.files);
+      errorDiv.style.display = 'none';
+
+      // Check count
+      if (files.length > MAX_PHOTOS) {
+        errorDiv.textContent   = `⚠️ Maximum ${MAX_PHOTOS} photos allowed. You selected ${files.length} — please remove some and try again.`;
+        errorDiv.style.display = 'block';
+        this.value = ''; // clear selection
+        fileLabel.innerHTML = `📷 <span>Click to upload photos</span> of your items<br><small style="color:rgba(244,244,240,0.3);">JPG, PNG, HEIC accepted · Up to ${MAX_PHOTOS} photos · Max ${MAX_MB}MB each</small>`;
+        return;
+      }
+
+      // Check individual file sizes and types
+      for (const file of files) {
+        if (file.size > MAX_BYTES) {
+          errorDiv.textContent   = `⚠️ "${file.name}" is too large (${(file.size/1024/1024).toFixed(1)}MB). Max size is ${MAX_MB}MB per photo.`;
+          errorDiv.style.display = 'block';
+          this.value = '';
+          fileLabel.innerHTML = `📷 <span>Click to upload photos</span> of your items<br><small style="color:rgba(244,244,240,0.3);">JPG, PNG, HEIC accepted · Up to ${MAX_PHOTOS} photos · Max ${MAX_MB}MB each</small>`;
+          return;
+        }
+        const type = file.type.toLowerCase();
+        if (type && !ALLOWED_TYPES.includes(type)) {
+          errorDiv.textContent   = `⚠️ "${file.name}" is not a supported image type. Please use JPG, PNG, HEIC, or WebP.`;
+          errorDiv.style.display = 'block';
+          this.value = '';
+          fileLabel.innerHTML = `📷 <span>Click to upload photos</span> of your items<br><small style="color:rgba(244,244,240,0.3);">JPG, PNG, HEIC accepted · Up to ${MAX_PHOTOS} photos · Max ${MAX_MB}MB each</small>`;
+          return;
+        }
+      }
+
+      // All good — show counter
+      if (files.length > 0) {
+        fileLabel.innerHTML = `✅ <span>${files.length}/${MAX_PHOTOS} photo${files.length > 1 ? 's' : ''} selected</span>`;
+      } else {
+        fileLabel.innerHTML = `📷 <span>Click to upload photos</span> of your items<br><small style="color:rgba(244,244,240,0.3);">JPG, PNG, HEIC accepted · Up to ${MAX_PHOTOS} photos · Max ${MAX_MB}MB each</small>`;
       }
     });
   }
 
-  // ── Form submit → /api/submit ─────────────────────────────────
+  // ── Form submit ───────────────────────────────────────────────
   const quoteForm = document.getElementById('quoteForm');
   if (quoteForm) {
     quoteForm.addEventListener('submit', async function(e) {
@@ -1115,43 +1161,53 @@ document.addEventListener('DOMContentLoaded', function() {
       e.stopPropagation();
 
       const submitBtn = document.getElementById('submitBtn');
-      const errorDiv  = document.getElementById('formError');
-
       errorDiv.style.display = 'none';
       errorDiv.textContent   = '';
       submitBtn.disabled     = true;
-      submitBtn.textContent  = '⏳ Sending...';
+      submitBtn.textContent  = '⏳ Uploading photos...';
 
       try {
-        // Build multipart form data — includes all fields + photos + turnstile token
-        const formData = new FormData();
-        formData.append('first_name', document.getElementById('first_name').value.trim());
-        formData.append('last_name',  document.getElementById('last_name').value.trim());
-        formData.append('phone',      document.getElementById('phone').value.trim());
-        formData.append('email',      document.getElementById('email').value.trim());
-        formData.append('address',    document.getElementById('address').value.trim());
-        formData.append('service',    document.getElementById('service').value);
-        formData.append('message',    document.getElementById('message').value.trim());
-        formData.append('website',    document.getElementById('website').value); // honeypot
+        // 1. Upload photos DIRECTLY to Supabase Storage (bypasses Vercel size limit)
+        const files     = Array.from(document.getElementById('photoUpload').files);
+        const photoUrls = [];
 
-        // Attach photos
-        const files = document.getElementById('photoUpload').files;
-        for (const file of Array.from(files)) {
-          formData.append('photos', file);
+        for (let i = 0; i < files.length; i++) {
+          const file     = files[i];
+          submitBtn.textContent = `⏳ Uploading photo ${i + 1} of ${files.length}...`;
+          const ext      = file.name.split('.').pop().toLowerCase();
+          const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const filePath = `leads/${fileName}`;
+
+          const { error: uploadError } = await sbClient.storage
+            .from('lead-photos')
+            .upload(filePath, file, { contentType: file.type });
+
+          if (uploadError) throw new Error(`Photo ${i + 1} upload failed: ${uploadError.message}`);
+          photoUrls.push(filePath);
         }
 
-        // Get Turnstile token
+        submitBtn.textContent = '⏳ Sending your request...';
+
+        // 2. Send text fields + photo paths to API (tiny payload — no size issues)
         const turnstileEl = document.querySelector('[name="cf-turnstile-response"]');
-        if (turnstileEl) formData.append('cf-turnstile-response', turnstileEl.value);
+        const formData    = new FormData();
+        formData.append('first_name',            document.getElementById('first_name').value.trim());
+        formData.append('last_name',             document.getElementById('last_name').value.trim());
+        formData.append('phone',                 document.getElementById('phone').value.trim());
+        formData.append('email',                 document.getElementById('email').value.trim());
+        formData.append('address',               document.getElementById('address').value.trim());
+        formData.append('service',               document.getElementById('service').value);
+        formData.append('message',               document.getElementById('message').value.trim());
+        formData.append('website',               document.getElementById('website').value);
+        formData.append('photo_urls',            JSON.stringify(photoUrls));
+        formData.append('cf-turnstile-response', turnstileEl?.value || '');
 
         const res  = await fetch('/api/submit', { method: 'POST', body: formData });
         const data = await res.json();
 
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Submission failed');
-        }
+        if (!res.ok || !data.success) throw new Error(data.error || 'Submission failed');
 
-        // Success
+        // 3. Success
         quoteForm.style.display = 'none';
         document.getElementById('formSuccess').style.display = 'block';
 
@@ -1161,7 +1217,6 @@ document.addEventListener('DOMContentLoaded', function() {
         errorDiv.style.display = 'block';
         submitBtn.disabled     = false;
         submitBtn.textContent  = '🚛 Send Quote Request';
-        // Reset Turnstile so user can try again
         if (window.turnstile) window.turnstile.reset();
       }
     });
