@@ -440,14 +440,14 @@
 </div>
 
 <script>
-  const SUPABASE_URL     = 'https://tcipkqjvtirudtilkknb.supabase.co';
+  const SUPABASE_URL      = 'https://tcipkqjvtirudtilkknb.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjaXBrcWp2dGlydWR0aWxra25iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzY0ODAsImV4cCI6MjA5NTY1MjQ4MH0.x54OSuQbpjAcFhttSOIHWzbEczqDxUaFP-2b6TDsuNw';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let allLeads = [];
 
   // ── Auth ─────────────────────────────────────────────────────
-  supabase.auth.onAuthStateChange((event, session) => {
+  db.auth.onAuthStateChange((event, session) => {
     if (session) {
       showDashboard(session.user);
     } else {
@@ -465,7 +465,7 @@
     btn.disabled = true;
     btn.textContent = 'Signing in...';
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password: pass });
+    const { error: authError } = await db.auth.signInWithPassword({ email, password: pass });
 
     if (authError) {
       error.textContent = 'Invalid email or password. Try again.';
@@ -483,7 +483,7 @@
   });
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await db.auth.signOut();
   }
 
   function showLogin() {
@@ -558,7 +558,7 @@
       const name    = [lead.first_name, lead.last_name].filter(Boolean).join(' ');
       const date    = new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       const photos  = (lead.photo_urls || []).map(path => {
-        const { data } = supabase.storage.from('lead-photos').getPublicUrl(path);
+        const { data } = db.storage.from('lead-photos').getPublicUrl(path);
         // We use a signed URL approach via click instead
         return `<img class="photo-thumb" src="" data-path="${path}" alt="Lead photo" onclick="openPhoto('${path}')" title="Click to view">`;
       }).join('');
@@ -583,7 +583,7 @@
     const imgs = document.querySelectorAll('.photo-thumb[data-path]');
     for (const img of imgs) {
       const path = img.getAttribute('data-path');
-      const { data, error } = await supabase.storage
+      const { data, error } = await db.storage
         .from('lead-photos')
         .createSignedUrl(path, 3600); // 1 hour
       if (!error && data?.signedUrl) {
@@ -593,7 +593,7 @@
   }
 
   async function openPhoto(path) {
-    const { data, error } = await supabase.storage
+    const { data, error } = await db.storage
       .from('lead-photos')
       .createSignedUrl(path, 3600);
     if (!error && data?.signedUrl) {
@@ -610,7 +610,7 @@
   async function deleteLead(id, name) {
     if (!confirm(`Delete lead for "${name}"? This cannot be undone.`)) return;
 
-    const { error } = await supabase.from('leads').delete().eq('id', id);
+    const { error } = await db.from('leads').delete().eq('id', id);
     if (!error) {
       allLeads = allLeads.filter(l => l.id !== id);
       updateStats();
