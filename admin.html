@@ -503,7 +503,7 @@
     document.getElementById('leadsBody').innerHTML =
       '<tr><td colspan="8"><div class="loading-state">Loading leads...</div></td></tr>';
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('leads')
       .select('*')
       .order('created_at', { ascending: false });
