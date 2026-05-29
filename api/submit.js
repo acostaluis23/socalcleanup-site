@@ -1,89 +1,68 @@
-// api/submit.js — Vercel Serverless Function (CommonJS)
+// api/submit.js — Vercel Serverless Function
+// Photos are uploaded directly from browser to Supabase Storage.
+// This function only verifies Turnstile + inserts the lead row.
 
 const https = require('https');
 
-const SUPABASE_URL       = process.env.SUPABASE_URL;
+const SUPABASE_URL         = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const TURNSTILE_SECRET   = process.env.TURNSTILE_SECRET;
+const TURNSTILE_SECRET     = process.env.TURNSTILE_SECRET;
 
-// ── Simple fetch using built-in https ─────────────────────────
-function postJSON(url, payload) {
+// ── HTTP helper ───────────────────────────────────────────────
+function httpsRequest(options, bodyBuffer) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify(payload);
-    const opts = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-    };
-    const req = https.request(url, opts, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(data) }));
+    const req = https.request(options, (res) => {
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => resolve({
+        status: res.statusCode,
+        body  : Buffer.concat(chunks).toString(),
+      }));
     });
     req.on('error', reject);
-    req.write(body);
+    if (bodyBuffer) req.write(bodyBuffer);
     req.end();
   });
 }
 
-function supabaseFetch(path, method, body, extraHeaders = {}) {
-  return new Promise((resolve, reject) => {
-    const url  = new URL(SUPABASE_URL + path);
-    const data = body ? JSON.stringify(body) : null;
-    const opts = {
-      hostname: url.hostname,
-      path    : url.pathname + url.search,
-      method,
-      headers : {
-        'apikey'       : SUPABASE_SERVICE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_SERVICE_KEY,
-        'Content-Type' : 'application/json',
-        'Prefer'       : 'return=minimal',
-        ...extraHeaders,
-      },
-    };
-    if (data) opts.headers['Content-Length'] = Buffer.byteLength(data);
-
-    const req = https.request(opts, (res) => {
-      let raw = '';
-      res.on('data', chunk => raw += chunk);
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, body: raw ? JSON.parse(raw) : {} }); }
-        catch { resolve({ status: res.statusCode, body: raw }); }
-      });
-    });
-    req.on('error', reject);
-    if (data) req.write(data);
-    req.end();
-  });
+// ── Turnstile verification ────────────────────────────────────
+async function verifyTurnstile(token, ip) {
+  const params = new URLSearchParams({
+    secret  : TURNSTILE_SECRET,
+    response: token,
+    remoteip: ip || '',
+  }).toString();
+  const buf  = Buffer.from(params);
+  const res  = await httpsRequest({
+    hostname: 'challenges.cloudflare.com',
+    path    : '/turnstile/v0/siteverify',
+    method  : 'POST',
+    headers : { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': buf.length },
+  }, buf);
+  const data = JSON.parse(res.body);
+  console.log('Turnstile result:', data);
+  return data.success === true;
 }
 
-function supabaseUpload(filePath, fileBuffer, mimeType) {
-  return new Promise((resolve, reject) => {
-    const url  = new URL(`${SUPABASE_URL}/storage/v1/object/lead-photos/${filePath}`);
-    const opts = {
-      hostname: url.hostname,
-      path    : url.pathname,
-      method  : 'POST',
-      headers : {
-        'apikey'        : SUPABASE_SERVICE_KEY,
-        'Authorization' : 'Bearer ' + SUPABASE_SERVICE_KEY,
-        'Content-Type'  : mimeType,
-        'Content-Length': fileBuffer.length,
-      },
-    };
-    const req = https.request(opts, (res) => {
-      let raw = '';
-      res.on('data', chunk => raw += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, body: raw }));
-    });
-    req.on('error', reject);
-    req.write(fileBuffer);
-    req.end();
-  });
+// ── Supabase insert ───────────────────────────────────────────
+async function insertLead(lead) {
+  const body = Buffer.from(JSON.stringify(lead));
+  return httpsRequest({
+    hostname: new URL(SUPABASE_URL).hostname,
+    path    : '/rest/v1/leads',
+    method  : 'POST',
+    headers : {
+      'apikey'        : SUPABASE_SERVICE_KEY,
+      'Authorization' : 'Bearer ' + SUPABASE_SERVICE_KEY,
+      'Content-Type'  : 'application/json',
+      'Content-Length': body.length,
+      'Prefer'        : 'return=minimal',
+    },
+  }, body);
 }
 
-// ── Parse multipart/form-data ─────────────────────────────────
-function parseMultipart(req) {
+// ── Parse simple multipart (text fields only) ─────────────────
+function parseFields(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     req.on('data', chunk => chunks.push(chunk));
@@ -92,100 +71,78 @@ function parseMultipart(req) {
         const body     = Buffer.concat(chunks);
         const ct       = req.headers['content-type'] || '';
         const bMatch   = ct.match(/boundary=(.+)$/);
-        if (!bMatch) return reject(new Error('No boundary in content-type'));
+        if (!bMatch) return reject(new Error('No boundary'));
         const boundary = bMatch[1].trim();
-        const delimiter = Buffer.from('\r\n--' + boundary);
         const fields   = {};
-        const files    = [];
 
-        // Split on boundary
-        let start = body.indexOf('--' + boundary);
-        while (start !== -1) {
-          const end = body.indexOf('\r\n--' + boundary, start + boundary.length + 2);
-          if (end === -1) break;
-          const part      = body.slice(start + boundary.length + 2, end);
-          const headerEnd = part.indexOf('\r\n\r\n');
-          if (headerEnd === -1) { start = end; continue; }
+        let pos = body.indexOf('--' + boundary);
+        const delim = Buffer.from('\r\n--' + boundary);
 
-          const headerStr  = part.slice(0, headerEnd).toString();
-          const content    = part.slice(headerEnd + 4);
-          const nameMatch  = headerStr.match(/name="([^"]+)"/);
-          const fileMatch  = headerStr.match(/filename="([^"]+)"/);
-          const ctMatch    = headerStr.match(/Content-Type:\s*([^\r\n]+)/i);
+        while (pos !== -1) {
+          pos += boundary.length + 2;
+          const nextDelim = body.indexOf(delim, pos);
+          const partEnd   = nextDelim === -1 ? body.length : nextDelim;
+          const part      = body.slice(pos, partEnd);
+          const hEnd      = part.indexOf('\r\n\r\n');
+          if (hEnd === -1) break;
 
-          if (!nameMatch) { start = end; continue; }
-          const name = nameMatch[1];
+          const headerStr = part.slice(0, hEnd).toString();
+          const content   = part.slice(hEnd + 4).toString().replace(/\r\n$/, '');
+          const nameMatch = headerStr.match(/name="([^"]+)"/);
+          const fileMatch = headerStr.match(/filename="/);
 
-          if (fileMatch) {
-            files.push({
-              fieldname: name,
-              filename : fileMatch[1],
-              mimetype : ctMatch ? ctMatch[1].trim() : 'application/octet-stream',
-              buffer   : content,
-            });
-          } else {
-            fields[name] = content.toString();
+          // Skip file parts — photos come as paths, not binary
+          if (nameMatch && !fileMatch) {
+            fields[nameMatch[1]] = content;
           }
-          start = end;
+
+          if (nextDelim === -1) break;
+          pos = nextDelim;
+          if (body.slice(pos + delim.length, pos + delim.length + 2).toString() === '--') break;
         }
-        resolve({ fields, files });
+        resolve(fields);
       } catch (err) { reject(err); }
     });
     req.on('error', reject);
   });
 }
 
-// ── Verify Turnstile ──────────────────────────────────────────
-async function verifyTurnstile(token, ip) {
-  const result = await postJSON('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    secret  : TURNSTILE_SECRET,
-    response: token,
-    remoteip: ip,
-  });
-  return result.body.success === true;
-}
-
 // ── Main handler ──────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Content-Type', 'application/json');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { fields, files } = await parseMultipart(req);
+    const fields = await parseFields(req);
 
-    // Honeypot
+    // Honeypot check
     if (fields.website && fields.website.trim()) {
-      return res.status(200).json({ success: true }); // silently drop bot
+      console.log('Honeypot triggered');
+      return res.status(200).json({ success: true });
     }
 
     // Turnstile verification
     const token = fields['cf-turnstile-response'];
-    if (!token) return res.status(400).json({ error: 'Missing security token' });
+    if (!token) return res.status(400).json({ error: 'Missing security token. Please refresh and try again.' });
     const ip    = (req.headers['x-forwarded-for'] || '').split(',')[0].trim();
     const valid = await verifyTurnstile(token, ip);
-    if (!valid) return res.status(400).json({ error: 'Security check failed. Please try again.' });
+    if (!valid) return res.status(400).json({ error: 'Security check failed. Please refresh and try again.' });
 
     // Basic validation
-    if (!fields.first_name?.trim()) return res.status(400).json({ error: 'First name is required' });
-    if (!fields.phone?.trim())      return res.status(400).json({ error: 'Phone is required' });
-    if (!fields.address?.trim())    return res.status(400).json({ error: 'Address is required' });
+    if (!fields.first_name?.trim()) return res.status(400).json({ error: 'First name is required.' });
+    if (!fields.phone?.trim())      return res.status(400).json({ error: 'Phone number is required.' });
+    if (!fields.address?.trim())    return res.status(400).json({ error: 'Address is required.' });
 
-    // Upload photos
-    const photoUrls  = [];
-    const photoFiles = files.filter(f => f.fieldname === 'photos' && f.buffer.length > 0);
-    for (const file of photoFiles) {
-      const ext      = (file.filename.split('.').pop() || 'jpg').toLowerCase();
-      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const filePath = `leads/${fileName}`;
-      const up       = await supabaseUpload(filePath, file.buffer, file.mimetype);
-      if (up.status >= 300) throw new Error('Photo upload failed: ' + up.body);
-      photoUrls.push(filePath);
-    }
+    // Parse photo URLs (sent as JSON string)
+    let photoUrls = [];
+    try { photoUrls = JSON.parse(fields.photo_urls || '[]'); } catch {}
 
     // Insert lead
-    const insert = await supabaseFetch('/rest/v1/leads', 'POST', {
+    const result = await insertLead({
       first_name: fields.first_name?.trim() || '',
       last_name : fields.last_name?.trim()  || '',
       phone     : fields.phone?.trim()      || '',
@@ -196,12 +153,13 @@ module.exports = async function handler(req, res) {
       photo_urls: photoUrls,
     });
 
-    if (insert.status >= 300) throw new Error('DB insert failed: ' + JSON.stringify(insert.body));
+    console.log('Insert result:', result.status, result.body);
+    if (result.status >= 300) throw new Error('DB insert failed (' + result.status + '): ' + result.body);
 
     return res.status(200).json({ success: true });
 
   } catch (err) {
-    console.error('Submit error:', err);
-    return res.status(500).json({ error: err.message || 'Server error' });
+    console.error('Submit error:', err.message);
+    return res.status(500).json({ error: err.message || 'Server error. Please try again or call (951) 573-2144.' });
   }
 };
