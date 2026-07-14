@@ -1082,6 +1082,66 @@ document.addEventListener('DOMContentLoaded', function() {
   const MAX_BYTES    = MAX_MB * 1024 * 1024;
   const ALLOWED_TYPES = ['image/jpeg','image/jpg','image/png','image/webp','image/heic','image/heif'];
 
+  // ── Photo compression (Canvas API) ───────────────────────────
+  // Shrinks photos ~10x before upload. Invisible to user, saves storage.
+  const MAX_WIDTH   = 1920;
+  const JPEG_QUALITY = 0.82;
+
+  function compressPhoto(file) {
+    return new Promise((resolve) => {
+      // HEIC files can't be drawn to canvas in most browsers — skip compression
+      const type = file.type.toLowerCase();
+      if (type === 'image/heic' || type === 'image/heif' || file.size < 300 * 1024) {
+        resolve(file); // already small or unsupported — pass through
+        return;
+      }
+
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+
+        // Calculate new dimensions keeping aspect ratio
+        let { width, height } = img;
+        if (width > MAX_WIDTH) {
+          height = Math.round(height * MAX_WIDTH / width);
+          width  = MAX_WIDTH;
+        }
+
+        // Draw to canvas and export as JPEG
+        const canvas = document.createElement('canvas');
+        canvas.width  = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob || blob.size >= file.size) {
+              resolve(file); // compression made it bigger — use original
+            } else {
+              // Return as a File so it has a proper name
+              const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+              console.log(`Compressed ${file.name}: ${(file.size/1024).toFixed(0)}KB → ${(compressed.size/1024).toFixed(0)}KB`);
+              resolve(compressed);
+            }
+          },
+          'image/jpeg',
+          JPEG_QUALITY
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file); // fallback to original on error
+      };
+
+      img.src = url;
+    });
+  }
+
+
   // ── Mobile menu ───────────────────────────────────────────────
   window.toggleMenu = function() {
     document.getElementById('mobileMenu').classList.toggle('open');
@@ -1172,7 +1232,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const photoUrls = [];
 
         for (let i = 0; i < files.length; i++) {
-          const file     = files[i];
+          const original = files[i];
+          submitBtn.textContent = `⏳ Processing photo ${i + 1} of ${files.length}...`;
+
+          // Compress before uploading — reduces storage ~10x with no visible quality loss
+          const file = await compressPhoto(original);
+
           submitBtn.textContent = `⏳ Uploading photo ${i + 1} of ${files.length}...`;
           const ext      = file.name.split('.').pop().toLowerCase();
           const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
