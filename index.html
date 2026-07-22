@@ -59,7 +59,10 @@
   /* ===== NAV ===== */
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    padding: 16px 24px;
+    padding: 12px 16px;
+  }
+  @media (min-width: 769px) {
+    nav { padding: 16px 24px; }
   }
   .nav-inner {
     max-width: 1200px; margin: 0 auto;
@@ -190,28 +193,37 @@
     position: absolute; inset: 0; z-index: 1;
     background:
       linear-gradient(to top,
-        rgba(5,10,5,0.92) 0%,
-        rgba(5,10,5,0.6) 35%,
-        rgba(5,10,5,0.15) 65%,
-        rgba(5,10,5,0.0) 100%);
+        rgba(5,10,5,0.96) 0%,
+        rgba(5,10,5,0.75) 30%,
+        rgba(5,10,5,0.35) 60%,
+        rgba(5,10,5,0.1) 100%);
   }
 
   .hero-content {
     position: relative; z-index: 2;
     max-width: 1200px; margin: 0 auto;
     width: 100%;
-    padding: 0 24px 64px;
+    padding: 120px 24px 64px;
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 40px;
     align-items: flex-end;
+    min-height: 100vh;
   }
 
   @media (max-width: 768px) {
     .hero-content {
       grid-template-columns: 1fr;
-      padding: 0 20px 100px;
+      padding: 100px 20px 32px;
     }
+    .hero-right { display: none; }
+    .hero-title { font-size: clamp(2.4rem, 11vw, 3.5rem); }
+    .hero-subtitle { font-size: 0.95rem; }
+    .btn-primary, .btn-outline {
+      width: 100%; justify-content: center;
+      padding: 16px 24px; font-size: 1rem;
+    }
+    .hero-buttons { flex-direction: column; gap: 10px; }
   }
 
   /* Hero left */
@@ -946,14 +958,11 @@
   <!-- Hero background slideshow -->
   <div id="hero-slides" style="position:absolute;inset:0;z-index:0;">
     <img class="hero-slide active"
-      src="https://tcipkqjvtirudtilkknb.supabase.co/storage/v1/object/public/gallery/IMG_4196.jpg"
-      alt="SoCal Cleanup & Hauling job site">
+      src="https://tcipkqjvtirudtilkknb.supabase.co/storage/v1/object/public/gallery/IMG_4202.jpg"
+      alt="Sergio Alvarez at a cleanup job">
     <img class="hero-slide"
       src="https://tcipkqjvtirudtilkknb.supabase.co/storage/v1/object/public/gallery/IMG_4201.jpg"
       alt="SoCal Cleanup & Hauling trailer loaded with debris">
-    <img class="hero-slide"
-      src="https://tcipkqjvtirudtilkknb.supabase.co/storage/v1/object/public/gallery/IMG_4202.jpg"
-      alt="Sergio Alvarez at a cleanup job">
   </div>
 
   <!-- Main content grid -->
@@ -1296,7 +1305,10 @@
 </footer>
 
 <!-- STICKY MOBILE CTA -->
-<a href="tel:9515732144" class="sticky-cta">📞 Call or Text for a Free Quote</a>
+<a href="tel:9515732144" class="sticky-cta">
+  <span style="font-size:1.1rem;">📞</span>
+  <span>Call or Text Sergio — <strong>(951) 573-2144</strong></span>
+</a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
