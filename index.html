@@ -453,6 +453,9 @@
     padding: var(--section-pad);
     background: #111;
   }
+  @media (max-width: 640px) {
+    #services { padding: 48px 16px; }
+  }
   .services-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -460,6 +463,18 @@
     margin-top: 48px;
     max-width: 1100px;
     margin-left: auto; margin-right: auto;
+  }
+  @media (max-width: 640px) {
+    .services-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .service-card {
+      padding: 20px 16px;
+    }
+    .service-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .service-name { font-size: 1rem; margin-bottom: 6px; }
+    .service-desc { font-size: 0.82rem; line-height: 1.5; }
   }
   .service-card {
     background: rgba(255,255,255,0.04);
@@ -892,16 +907,19 @@
     display: none;
     align-items: center; justify-content: center;
     gap: 10px;
-    padding: 14px 20px;
-    font-family: 'Oswald', sans-serif;
-    font-size: 1.1rem;
+    padding: 15px 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
     font-weight: 700;
     text-decoration: none;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.2px;
+    box-shadow: 0 -4px 20px rgba(245,166,35,0.3);
+    transition: background 0.2s;
   }
+  .sticky-cta:hover { background: var(--gold-light); }
   @media (max-width: 768px) {
     .sticky-cta { display: flex; }
-    body { padding-bottom: 56px; }
+    body { padding-bottom: 60px; }
   }
 
   /* ===== ANIMATIONS ===== */
@@ -1305,9 +1323,9 @@
 </footer>
 
 <!-- STICKY MOBILE CTA -->
-<a href="tel:9515732144" class="sticky-cta">
-  <span style="font-size:1.1rem;">📞</span>
-  <span>Call or Text Sergio — <strong>(951) 573-2144</strong></span>
+<a href="#contact" class="sticky-cta">
+  <span style="font-size:1.1rem;">📸</span>
+  <span><strong>Get a Free Quote</strong> — It's Fast & Free</span>
 </a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
