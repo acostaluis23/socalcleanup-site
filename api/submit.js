@@ -218,17 +218,27 @@ module.exports = async function handler(req, res) {
     console.log('Insert result:', result.status, result.body);
     if (result.status >= 300) throw new Error('DB insert failed (' + result.status + '): ' + result.body);
 
-    // ── Send email notification (fire-and-forget, don't block response) ──
-    sendLeadEmail({
-      first_name: fields.first_name?.trim() || '',
-      last_name : fields.last_name?.trim()  || '',
-      phone     : fields.phone?.trim()      || '',
-      email     : fields.email?.trim()      || '',
-      address   : fields.address?.trim()    || '',
-      service   : fields.service            || '',
-      message   : fields.message?.trim()    || '',
-      photo_urls: photoUrls,
-    }).catch(err => console.error('Email notify failed:', err.message));
+    // ── Send email notification ──
+    // Must be awaited: Vercel can freeze/terminate the function right after
+    // the response is sent, killing any in-flight "fire and forget" promise
+    // before the outbound request to Resend ever completes.
+    try {
+      const emailResult = await sendLeadEmail({
+        first_name: fields.first_name?.trim() || '',
+        last_name : fields.last_name?.trim()  || '',
+        phone     : fields.phone?.trim()      || '',
+        email     : fields.email?.trim()      || '',
+        address   : fields.address?.trim()    || '',
+        service   : fields.service            || '',
+        message   : fields.message?.trim()    || '',
+        photo_urls: photoUrls,
+      });
+      console.log('Resend result:', emailResult.status, emailResult.body);
+    } catch (err) {
+      // Don't fail the whole submission just because the email failed —
+      // the lead is already saved. Just log it so it shows up in Vercel logs.
+      console.error('Email notify failed:', err.message);
+    }
 
     return res.status(200).json({ success: true });
 
