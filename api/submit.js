@@ -107,6 +107,68 @@ function parseFields(req) {
   });
 }
 
+// ── Resend email notification ─────────────────────────────────
+async function sendLeadEmail(lead) {
+  const name = [lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Unknown';
+  const photoCount = (lead.photo_urls || []).length;
+  const photosLine = photoCount > 0
+    ? `<p style="margin:0 0 8px"><strong>📷 Photos:</strong> ${photoCount} photo${photoCount > 1 ? 's' : ''} attached — view in admin dashboard</p>`
+    : `<p style="margin:0 0 8px;color:#888"><strong>Photos:</strong> None submitted</p>`;
+
+  const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f4f0;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f0;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);">
+        <tr><td style="background:#1a5c1a;padding:24px 32px;">
+          <p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.6);">New Lead</p>
+          <h1 style="margin:6px 0 0;font-size:22px;font-weight:700;color:#fff;">SoCal Cleanup & Hauling</h1>
+        </td></tr>
+        <tr><td style="background:#f5a623;padding:12px 32px;">
+          <p style="margin:0;font-size:14px;font-weight:700;color:#0d0d0d;">🚛 New quote request received</p>
+        </td></tr>
+        <tr><td style="padding:28px 32px;">
+          <h2 style="margin:0 0 16px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#888;border-bottom:1px solid #eee;padding-bottom:8px;">Contact Info</h2>
+          <p style="margin:0 0 8px"><strong>👤 Name:</strong> ${name}</p>
+          <p style="margin:0 0 8px"><strong>📞 Phone:</strong> <a href="tel:${lead.phone}" style="color:#1a5c1a;font-weight:700;">${lead.phone || '—'}</a></p>
+          ${lead.email ? `<p style="margin:0 0 8px"><strong>✉️ Email:</strong> ${lead.email}</p>` : ''}
+          <p style="margin:0 0 24px"><strong>📍 Address:</strong> ${lead.address || '—'}</p>
+          <h2 style="margin:0 0 16px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#888;border-bottom:1px solid #eee;padding-bottom:8px;">Job Details</h2>
+          <p style="margin:0 0 8px"><strong>🔧 Service:</strong> ${lead.service || 'Not specified'}</p>
+          ${lead.message
+            ? `<p style="margin:0 0 8px"><strong>💬 Message:</strong></p><p style="margin:0 0 16px;padding:12px 16px;background:#f9f9f9;border-left:3px solid #1a5c1a;border-radius:4px;color:#333;">${lead.message}</p>`
+            : `<p style="margin:0 0 16px;color:#888">No message provided.</p>`}
+          ${photosLine}
+          <div style="margin-top:28px;text-align:center;">
+            <a href="https://socalcleanup-site.vercel.app/admin.html" style="display:inline-block;padding:14px 32px;background:#1a5c1a;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;">View in Admin Dashboard →</a>
+          </div>
+        </td></tr>
+        <tr><td style="padding:16px 32px;background:#f9f9f9;border-top:1px solid #eee;">
+          <p style="margin:0;font-size:12px;color:#aaa;text-align:center;">SoCal Cleanup & Hauling · Yorba Linda, CA · (951) 573-2144</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  const body = Buffer.from(JSON.stringify({
+    from   : 'SoCal Cleanup <onboarding@resend.dev>',
+    to     : ['acostaluis23@gmail.com'],
+    subject: `🚛 New Lead: ${name} — ${lead.service || 'Quote Request'}`,
+    html,
+  }));
+
+  return httpsRequest({
+    hostname: 'api.resend.com',
+    path    : '/emails',
+    method  : 'POST',
+    headers : {
+      'Authorization' : 'Bearer ' + process.env.RESEND_API_KEY,
+      'Content-Type'  : 'application/json',
+      'Content-Length': body.length,
+    },
+  }, body);
+}
+
 // ── Main handler ──────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -155,6 +217,18 @@ module.exports = async function handler(req, res) {
 
     console.log('Insert result:', result.status, result.body);
     if (result.status >= 300) throw new Error('DB insert failed (' + result.status + '): ' + result.body);
+
+    // ── Send email notification (fire-and-forget, don't block response) ──
+    sendLeadEmail({
+      first_name: fields.first_name?.trim() || '',
+      last_name : fields.last_name?.trim()  || '',
+      phone     : fields.phone?.trim()      || '',
+      email     : fields.email?.trim()      || '',
+      address   : fields.address?.trim()    || '',
+      service   : fields.service            || '',
+      message   : fields.message?.trim()    || '',
+      photo_urls: photoUrls,
+    }).catch(err => console.error('Email notify failed:', err.message));
 
     return res.status(200).json({ success: true });
 
