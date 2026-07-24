@@ -152,7 +152,7 @@ async function sendLeadEmail(lead) {
 
   const body = Buffer.from(JSON.stringify({
     from   : 'SoCal Cleanup <notifications@socalcleanupandhauling.com>',
-    to     : ['alvarez_sergio1997@outlook.com', 'luism@computerdoctorsla.com', 'acostaluis23@gmail.com'],
+    to     : ['alvarez_sergio1997@outlook.com', 'acostaluis23@gmail.com'],
     subject: `🚛 New Lead: ${name} — ${lead.service || 'Quote Request'}`,
     html,
   }));
