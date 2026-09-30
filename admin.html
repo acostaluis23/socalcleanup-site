@@ -73,6 +73,14 @@
   .svc-moving    { background:rgba(245,166,35,0.12); color:#fbbf24; border:1px solid rgba(245,166,35,0.25); }
   .svc-other     { background:rgba(100,116,139,0.12);color:#94a3b8; border:1px solid rgba(100,116,139,0.25);}
 
+  /* Preferred date chip */
+  .pref-date {
+    margin-top:10px; display:inline-flex; align-items:center; gap:6px;
+    font-size:0.8rem; font-weight:800; color:var(--gold);
+    padding:4px 10px; background:rgba(245,166,35,0.08);
+    border:1px solid rgba(245,166,35,0.2); border-radius:6px;
+  }
+
   /* ── LOGIN ── */
   #loginScreen {
     min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
@@ -551,12 +559,13 @@
 
   // ── Stats ─────────────────────────────────────────────────────
   function updateStats() {
-    const today = new Date().toISOString().slice(0,10);
+    // Compare in the viewer's local time (not UTC) so "Today" flips at local midnight
+    const todayStr = new Date().toDateString();
     animateNum('statTotal',     allLeads.length);
     animateNum('statNew',       allLeads.filter(l => (l.status||'new') === 'new').length);
     animateNum('statBooked',    allLeads.filter(l => l.status === 'booked').length);
     animateNum('statCompleted', allLeads.filter(l => l.status === 'completed').length);
-    animateNum('statToday',     allLeads.filter(l => l.created_at.startsWith(today)).length);
+    animateNum('statToday',     allLeads.filter(l => new Date(l.created_at).toDateString() === todayStr).length);
     animateNum('statPhotos',    allLeads.filter(l => l.photo_urls?.length > 0).length);
   }
 
@@ -581,7 +590,7 @@
     const service = document.getElementById('serviceFilter').value;
 
     filtered = allLeads.filter(l => {
-      const name = (l.first_name + ' ' + l.last_name).toLowerCase();
+      const name = ((l.first_name||'') + ' ' + (l.last_name||'')).toLowerCase();
       const matchSearch  = !search  || name.includes(search) || (l.phone||'').includes(search) || (l.address||'').toLowerCase().includes(search) || (l.email||'').toLowerCase().includes(search);
       const matchStatus  = !status  || (l.status||'new') === status;
       const matchService = !service || l.service === service;
@@ -639,13 +648,19 @@
     const date    = new Date(lead.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
     const photoCount = (lead.photo_urls || []).length;
 
+    // Preferred date: add T00:00:00 so it's parsed as LOCAL time (a bare
+    // 'YYYY-MM-DD' is parsed as UTC and shows up a day early in California)
+    const prefDate = lead.preferred_date
+      ? new Date(lead.preferred_date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' })
+      : null;
+
     const statusOpts = Object.entries(STATUS).map(([val, cfg]) =>
       `<option value="${val}" ${val === status ? 'selected' : ''}>${cfg.label}</option>`
     ).join('');
 
     const photosHTML = photoCount > 0
       ? (lead.photo_urls || []).map(path =>
-          `<img class="photo-thumb loading" data-path="${escHtml(path)}" src="" alt="photo" onclick="openPhoto('${escHtml(path)}')" title="Click to view">`
+          `<img class="photo-thumb loading" data-path="${escHtml(path)}" src="" alt="photo" onclick="openPhoto(this.dataset.path)" title="Click to view">`
         ).join('')
       : '<span style="color:var(--muted2);font-size:0.78rem;padding:4px 0;">No photos attached</span>';
 
@@ -668,6 +683,7 @@
         <div class="card-section">
           <div class="card-section-label">Job Details</div>
           ${lead.service ? `<span class="svc-badge ${svcCls}">${escHtml(lead.service)}</span>` : ''}
+          ${prefDate ? `<div><span class="pref-date">📅 Wants: ${escHtml(prefDate)}</span></div>` : ''}
           ${lead.message ? `<div class="lead-message">${escHtml(lead.message)}</div>` : '<div class="lead-message" style="color:var(--muted2)">No message provided.</div>'}
         </div>
 
@@ -688,7 +704,7 @@
             ${statusOpts}
           </select>
           ${photoCount > 0 ? `<div class="photo-count-label">📷 ${photoCount} photo${photoCount > 1 ? 's' : ''}</div>` : ''}
-          <button class="delete-btn" onclick="deleteLead('${lead.id}','${escHtml(name)}')">🗑 Delete</button>
+          <button class="delete-btn" onclick="deleteLead('${lead.id}')">🗑 Delete</button>
         </div>
 
       </div>
@@ -812,7 +828,11 @@
   }
 
   // ── Delete ────────────────────────────────────────────────────
-  async function deleteLead(id, name) {
+  // The name is looked up by id (not passed through an inline onclick string),
+  // so names with apostrophes/quotes like O'Brien can't break the handler.
+  async function deleteLead(id) {
+    const lead = allLeads.find(l => l.id === id);
+    const name = lead ? [lead.first_name, lead.last_name].filter(Boolean).join(' ') : 'this lead';
     if (!confirm(`Delete lead for "${name}"?\nThis cannot be undone.`)) return;
     const { error } = await db.from('leads').delete().eq('id', id);
     if (!error) {
@@ -844,7 +864,12 @@
   // ── Util ──────────────────────────────────────────────────────
   function escHtml(str) {
     if (!str) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
   }
 </script>
 </body>
