@@ -16,6 +16,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/themes/dark.css">
 <style>
   :root {
     --green-dark: #1a5c1a;
@@ -810,6 +812,48 @@
   }
   .form-group textarea { resize: vertical; min-height: 90px; }
   .form-group select option { background: #111; color: var(--off-white); }
+
+  /* Preferred date picker (flatpickr) */
+  .form-group input[type="date"] { color-scheme: dark; min-height: 44px; }
+  .form-group input.flatpickr-input { cursor: pointer; min-height: 44px; }
+  .form-hint {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: rgba(244,244,240,0.35);
+  }
+  .date-clear {
+    background: none; border: none; padding: 0; margin-left: 8px;
+    color: var(--gold); font: inherit; font-weight: 700; cursor: pointer;
+    text-decoration: underline; display: none;
+  }
+  .date-clear.show { display: inline; }
+
+  /* flatpickr theme tweaks to match the site (dark.css is the base) */
+  .flatpickr-calendar {
+    font-family: 'Nunito', sans-serif;
+    background: #1b1b1f;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  }
+  .flatpickr-calendar.arrowTop:before, .flatpickr-calendar.arrowTop:after { border-bottom-color: #1b1b1f; }
+  .flatpickr-calendar.arrowBottom:before, .flatpickr-calendar.arrowBottom:after { border-top-color: #1b1b1f; }
+  .flatpickr-calendar .flatpickr-months,
+  .flatpickr-calendar .flatpickr-months .flatpickr-month,
+  .flatpickr-calendar .flatpickr-weekdays,
+  .flatpickr-calendar span.flatpickr-weekday { background: transparent; }
+  .flatpickr-calendar span.flatpickr-weekday { color: rgba(244,244,240,0.6); font-weight: 700; }
+  /* Days outside the shown month + blocked past days: clearly dimmed */
+  .flatpickr-calendar .flatpickr-day.prevMonthDay,
+  .flatpickr-calendar .flatpickr-day.nextMonthDay { color: rgba(255,255,255,0.2); }
+  .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+  .flatpickr-calendar .flatpickr-day.flatpickr-disabled:hover { color: rgba(255,255,255,0.12); }
+  .flatpickr-calendar .flatpickr-day:hover { background: rgba(255,255,255,0.1); border-color: transparent; }
+  .flatpickr-calendar .flatpickr-day.today { border-color: var(--gold); }
+  .flatpickr-calendar .flatpickr-day.selected,
+  .flatpickr-calendar .flatpickr-day.selected:hover {
+    background: var(--gold); border-color: var(--gold); color: var(--black); font-weight: 800;
+  }
+
   .file-upload {
     border: 2px dashed rgba(245,166,35,0.3);
     border-radius: 6px;
@@ -1276,6 +1320,11 @@
           </select>
         </div>
         <div class="form-group">
+          <label for="preferred_date">Preferred Date</label>
+          <input type="date" id="preferred_date" placeholder="Select a date">
+          <div class="form-hint">Optional — pick the day you'd like us to come. We'll confirm availability.<button type="button" class="date-clear" id="dateClear">Clear date</button></div>
+        </div>
+        <div class="form-group">
           <label>Tell Us More</label>
           <textarea id="message" placeholder="What do you need removed? Approx. how much? Any special notes..."></textarea>
         </div>
@@ -1327,6 +1376,7 @@
 </a>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1422,6 +1472,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }, { threshold: 0.1 });
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  // ── Preferred date picker (flatpickr) ─────────────────────────
+  // If the library fails to load, the native <input type="date"> still works.
+  const dateInput = document.getElementById('preferred_date');
+  const dateClear = document.getElementById('dateClear');
+  if (dateInput && window.flatpickr) {
+    const fp = flatpickr(dateInput, {
+      dateFormat: 'Y-m-d',        // value sent to the server (unchanged)
+      altInput: true,             // what the customer sees:
+      altFormat: 'D, M j, Y',     //   e.g. "Sun, Jan 10, 2027"
+      minDate: 'today',           // blocks past dates (local time)
+      disableMobile: false,       // phones keep their native wheel/calendar
+      onChange: (selected) => dateClear && dateClear.classList.toggle('show', selected.length > 0),
+    });
+    if (dateClear) dateClear.addEventListener('click', () => fp.clear());
+  } else if (dateInput) {
+    const now = new Date();
+    dateInput.min = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }
 
   // ── File upload handler ───────────────────────────────────────
   const fileUploadArea = document.getElementById('fileUploadArea');
@@ -1524,6 +1593,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('email',                 document.getElementById('email').value.trim());
         formData.append('address',               document.getElementById('address').value.trim());
         formData.append('service',               document.getElementById('service').value);
+        formData.append('preferred_date',        document.getElementById('preferred_date').value);
         formData.append('message',               document.getElementById('message').value.trim());
         formData.append('website',               document.getElementById('website').value);
         formData.append('photo_urls',            JSON.stringify(photoUrls));
